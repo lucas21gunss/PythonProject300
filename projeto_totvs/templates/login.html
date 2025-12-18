@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Portal MRB</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 48px;
+            color: #0066cc;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; margin-bottom: 5px; color: #666; font-size: 14px; }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        button:hover { background: #0052a3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .error { color: #dc3545; font-size: 14px; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo">M</div>
+        <h2 style="color: #333; margin-bottom: 30px;">Portal Manufatura</h2>
+
+        <div class="form-group">
+            <label>Usuário Protheus</label>
+            <input type="text" id="username" placeholder="Digite seu usuário">
+        </div>
+        <div class="form-group">
+            <label>Senha</label>
+            <input type="password" id="password" placeholder="Digite sua senha">
+        </div>
+
+        <button onclick="fazerLogin()" id="btnLogin">ENTRAR</button>
+        <div id="errorMsg" class="error"></div>
+    </div>
+
+    <script>
+        async function fazerLogin() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const btn = document.getElementById('btnLogin');
+            const errorDiv = document.getElementById('errorMsg');
+
+            if (!user || !pass) {
+                mostrarErro("Preencha todos os campos");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Autenticando...";
+            errorDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Salvar token no Cookie para requisições de página e JS
+                    document.cookie = `token=${data.token}; path=/; max-age=28800`; // 8 horas
+                    window.location.href = '/';
+                } else {
+                    mostrarErro(data.error || "Erro na autenticação");
+                }
+            } catch (e) {
+                mostrarErro("Erro de conexão com o servidor");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "ENTRAR";
+            }
+        }
+
+        function mostrarErro(msg) {
+            const div = document.getElementById('errorMsg');
+            div.textContent = msg;
+            div.style.display = 'block';
+        }
+
+        // Permitir Enter para login
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') fazerLogin();
+        });
+    </script>
+</body>
+</html>

@@ -28,6 +28,24 @@
         .header-title { font-size: 24px; font-weight: bold; }
         .header-right { display: flex; gap: 20px; align-items: center; font-size: 14px; position: relative; }
 
+        /* ESTILO DO BOTÃO SAIR (NOVO) */
+        .btn-logout {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid rgba(255,255,255,0.4);
+            padding: 8px 15px;
+            border-radius: 4px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-logout:hover {
+            background-color: rgba(255,255,255,0.15);
+            border-color: #fff;
+        }
+
         /* CARRINHO */
         .cart-icon {
             position: relative;
@@ -223,9 +241,14 @@
         </div>
         <div class="header-right">
             <span id="currentDate"></span>
+
             <div class="cart-icon" onclick="toggleCart()">
                 🛒 <span class="cart-badge" id="cartBadge">0</span>
             </div>
+
+            <a href="/logout" class="btn-logout" title="Sair do sistema">
+                🚪 Sair
+            </a>
         </div>
     </header>
 
@@ -325,7 +348,7 @@
                 lista.innerHTML = celulas.map(c => `
                     <li class="selection-item" onclick="selecionarCelula('${c.AFC_XPROD}', event)">
                         <div class="selection-item-main">${c.AFC_XPROD}</div>
-                        <div class="selection-item-sub">Nec: ${c.AFA_QUANT || 0} | Ent: ${c.CP_XQUPR || 0}</div>
+                        <div class="selection-item-sub">Necessidade: ${c.AFA_QUANT || 0} | Entregue: ${c.CP_XQUPR || 0}</div>
                     </li>
                 `).join('');
             } catch (error) { console.error(error); }
@@ -371,12 +394,12 @@
                     <table class="products-table">
                         <thead>
                             <tr>
-                                <th>Sel.</th>
+                                <th>Selecionar.</th>
                                 <th>Código</th>
                                 <th>Descrição</th>
-                                <th>Nec.</th>
-                                <th>Ent.</th>
-                                <th>Pen.</th>
+                                <th>Necessidade.</th>
+                                <th>Entregue.</th>
+                                <th>Pendente.</th>
                                 <th>Qtd.</th>
                                 <th>Status</th>
                             </tr>
