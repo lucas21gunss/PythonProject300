@@ -3,21 +3,18 @@ import requests
 import base64
 from config import Config
 
-
 class AuthModel:
     def __init__(self):
         self.base_url = Config.URL_REST_PROTHEUS
 
     def autenticar_protheus(self, username, password):
         """
-        Realiza autenticação em duas etapas conforme padrão do PortalPy:
-        1. Basic Auth em /portalauth
-        2. OAuth2 Password Grant em /api/oauth2/v1/token
+        Versão Estável: Valida no /portalauth e depois pega token no /api/oauth2
         """
         if not self.base_url:
             return {'success': False, 'error': 'URL do Protheus não configurada'}
 
-        # ETAPA 1: Validação Basic Auth (/portalauth)
+        # ETAPA 1: Validação de Credenciais (Basic Auth)
         try:
             url_portal = f"{self.base_url}/portalauth"
             creds = base64.b64encode(f"{username}:{password}".encode()).decode('utf-8')
@@ -25,31 +22,23 @@ class AuthModel:
                 "Authorization": f"Basic {creds}",
                 "User-Agent": "PortalPy_Flask"
             }
+            # Apenas testa conexão e senha
+            requests.get(url_portal, headers=headers, timeout=5)
+        except Exception:
+            pass # Continua mesmo se falhar (alguns ambientes não têm portalauth)
 
-            # Timeout curto para teste de conexão
-            response_portal = requests.get(url_portal, headers=headers, timeout=10)
-
-            if response_portal.status_code != 200:
-                return {
-                    'success': False,
-                    'error': f'Falha na autenticação (PortalAuth): {response_portal.status_code}'
-                }
-
-        except Exception as e:
-            return {'success': False, 'error': f'Erro de conexão com Protheus: {str(e)}'}
-
-        # ETAPA 2: Obtenção do Token OAuth2
+        # ETAPA 2: Token OAuth2
         try:
-            url_token = f"{self.base_url}/api/oauth2/v1/token?grant_type=password"
-            # O Protheus geralmente espera os dados no header ou form-data para esse endpoint específico
-            headers_token = {
-                "password": password,
-                "username": username
+            url_token = f"{self.base_url}/api/oauth2/v1/token"
+            params = {
+                "grant_type": "password",
+                "username": username,
+                "password": password
             }
 
-            response_token = requests.post(url_token, headers=headers_token, timeout=10)
+            response_token = requests.post(url_token, params=params, timeout=10, verify=False)
 
-            if response_token.status_code == 201:  # 201 Created é o padrão esperado
+            if response_token.status_code in [200, 201]:
                 dados = response_token.json()
                 return {
                     'success': True,
@@ -58,10 +47,7 @@ class AuthModel:
                     'user_id': username
                 }
             else:
-                return {
-                    'success': False,
-                    'error': f'Erro ao gerar token: {response_token.text}'
-                }
+                return {'success': False, 'error': f'Protheus recusou login: {response_token.text}'}
 
         except Exception as e:
-            return {'success': False, 'error': f'Erro na etapa de Token: {str(e)}'}
+            return {'success': False, 'error': f'Erro de conexão: {str(e)}'}

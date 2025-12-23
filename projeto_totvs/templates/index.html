@@ -28,7 +28,7 @@
         .header-title { font-size: 24px; font-weight: bold; }
         .header-right { display: flex; gap: 20px; align-items: center; font-size: 14px; position: relative; }
 
-        /* ESTILO DO BOTÃO SAIR (NOVO) */
+        /* ESTILO DO BOTÃO SAIR */
         .btn-logout {
             color: white;
             text-decoration: none;
@@ -219,6 +219,40 @@
         .loading { text-align: center; padding: 20px; color: #0066cc; }
         .empty-state { text-align: center; padding: 40px; color: #999; }
 
+        /* ESTILOS MODAL RESULTADO (Importante para o retorno do app.js) */
+        .result-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .result-modal.active { display: flex; opacity: 1; }
+        .result-content {
+            background: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .result-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .result-header h2 { color: #28a745; font-size: 18px; }
+        .close-result { background:none; border:none; font-size: 24px; cursor: pointer; color: #666; }
+        .result-body { padding: 20px; overflow-y: auto; }
+        .result-section { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .result-section:last-child { border-bottom: none; }
+        .result-message { font-size: 16px; margin-bottom: 10px; font-weight: bold; color: #333; }
+        .result-data pre { background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 11px; overflow-x: auto; border: 1px solid #ddd; }
+        .result-footer { padding: 15px; border-top: 1px solid #eee; text-align: right; }
+        .btn-close-result { background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+
         /* MOBILE */
         @media (max-width: 768px) {
             header { padding: 10px 15px; }
@@ -300,224 +334,6 @@
         </main>
     </div>
 
-    <script>
-        let projetosData = [];
-        let produtosData = [];
-        let carrinho = [];
-        let projetoSelecionado = null;
-
-        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('pt-BR');
-
-        // --- PROJETOS E CÉLULAS ---
-        async function carregarProjetos() {
-            try {
-                const response = await fetch('/api/projetos');
-                projetosData = await response.json();
-                renderizarProjetos(projetosData);
-            } catch (error) { console.error(error); }
-        }
-
-        function renderizarProjetos(dados) {
-            const lista = document.getElementById('projetosList');
-            lista.innerHTML = dados.map(p => `
-                <li class="selection-item" onclick="selecionarProjeto('${p.AF8_PROJET}', '${p.AF8_REVISA}', event)">
-                    <div class="selection-item-main">${p.AF8_PROJET}</div>
-                    <div class="selection-item-sub">${p.AF8_XNOMCL || ''} (Rev: ${p.AF8_REVISA})</div>
-                </li>
-            `).join('');
-        }
-
-        function filtrarProjetos() {
-            const termo = document.getElementById('filterProjeto').value.toLowerCase();
-            const filtrados = projetosData.filter(p =>
-                p.AF8_PROJET.toLowerCase().includes(termo) ||
-                (p.AF8_XNOMCL && p.AF8_XNOMCL.toLowerCase().includes(termo))
-            );
-            renderizarProjetos(filtrados);
-        }
-
-        async function selecionarProjeto(id, rev, event) {
-            projetoSelecionado = {id, rev};
-            document.querySelectorAll('#projetosList .selection-item').forEach(el => el.classList.remove('selected'));
-            event.currentTarget.classList.add('selected');
-
-            try {
-                const res = await fetch(`/api/celulas/${id}/${rev}`);
-                const celulas = await res.json();
-                const lista = document.getElementById('celulasList');
-                lista.innerHTML = celulas.map(c => `
-                    <li class="selection-item" onclick="selecionarCelula('${c.AFC_XPROD}', event)">
-                        <div class="selection-item-main">${c.AFC_XPROD}</div>
-                        <div class="selection-item-sub">Necessidade: ${c.AFA_QUANT || 0} | Entregue: ${c.CP_XQUPR || 0}</div>
-                    </li>
-                `).join('');
-            } catch (error) { console.error(error); }
-        }
-
-        async function selecionarCelula(celula, event) {
-            document.querySelectorAll('#celulasList .selection-item').forEach(el => el.classList.remove('selected'));
-            event.currentTarget.classList.add('selected');
-            document.getElementById('mainTitle').textContent = `Projeto/CELROB: ${projetoSelecionado.id} | Célula: ${celula}`;
-
-            try {
-                const res = await fetch(`/api/produtos/${projetoSelecionado.id}/${projetoSelecionado.rev}/${celula}`);
-                const resultado = await res.json();
-                produtosData = resultado.data || [];
-                renderPainelProdutos();
-            } catch (error) { console.error(error); }
-        }
-
-        // --- PRODUTOS E FILTROS ---
-        function renderPainelProdutos() {
-            const totalNec = produtosData.reduce((s, p) => s + (p.AFA_QUANT || 0), 0);
-            const totalEnt = produtosData.reduce((s, p) => s + (p.CP_XQUPR || 0), 0);
-            const totalPen = totalNec - totalEnt;
-            const percGeral = totalNec > 0 ? Math.round((totalEnt/totalNec)*100) : 0;
-
-            document.getElementById('mainContent').innerHTML = `
-                <div class="stats-box">
-                    <div class="stat-item necessidade"><div class="stat-label">Necessidade</div><div class="stat-value">${totalNec}</div></div>
-                    <div class="stat-item entregue"><div class="stat-label">Entregue</div><div class="stat-value">${totalEnt}</div></div>
-                    <div class="stat-item pendente"><div class="stat-label">Pendente</div><div class="stat-value">${totalPen}</div></div>
-                    <div class="stat-item percentual"><div class="stat-label">Conclusão</div><div class="stat-value">${percGeral}%</div></div>
-                </div>
-
-                <div class="product-filters">
-                    <input type="text" id="productFilterCode" class="product-filter-input" placeholder="🔍 Buscar por código..." oninput="aplicarFiltros()">
-                    <input type="text" id="productFilterDesc" class="product-filter-input" placeholder="📝 Buscar por descrição..." oninput="aplicarFiltros()">
-                    <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
-                        <input type="checkbox" id="productFilterPending" onchange="aplicarFiltros()"> ⏳ Apenas Pendentes
-                    </label>
-                </div>
-
-                <div class="table-container">
-                    <table class="products-table">
-                        <thead>
-                            <tr>
-                                <th>Selecionar.</th>
-                                <th>Código</th>
-                                <th>Descrição</th>
-                                <th>Necessidade.</th>
-                                <th>Entregue.</th>
-                                <th>Pendente.</th>
-                                <th>Qtd.</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="produtosBody"></tbody>
-                    </table>
-                </div>
-            `;
-            aplicarFiltros();
-        }
-
-        function aplicarFiltros() {
-            const fCode = document.getElementById('productFilterCode').value.toLowerCase();
-            const fDesc = document.getElementById('productFilterDesc').value.toLowerCase();
-            const fPend = document.getElementById('productFilterPending').checked;
-
-            const filtrados = produtosData.filter(p => {
-                const cod = (p.AFA_PRODUT || "").toLowerCase();
-                const des = (p.AFA_XDESCR || "").toLowerCase();
-                const pen = (p.AFA_QUANT || 0) - (p.CP_XQUPR || 0);
-                const matchTexto = cod.includes(fCode) && des.includes(fDesc);
-                const matchPend = fPend ? pen > 0 : true;
-                return matchTexto && matchPend;
-            });
-
-            document.getElementById('produtosBody').innerHTML = filtrados.map(p => {
-                const nec = p.AFA_QUANT || 0;
-                const ent = p.CP_XQUPR || 0;
-                const pen = nec - ent;
-                const perc = nec > 0 ? Math.round((ent/nec)*100) : 0;
-
-                let statusClass = 'pending';
-                let statusText = 'Pendente';
-                if (ent >= nec && nec > 0) {
-                    statusClass = 'complete'; statusText = 'Completo';
-                } else if (ent > 0) {
-                    statusClass = 'partial'; statusText = `${perc}%`;
-                }
-
-                const isInCart = carrinho.find(c => c.codigo === p.AFA_PRODUT);
-                const valInput = isInCart ? isInCart.quantidade : pen;
-
-                return `
-                    <tr>
-                        <td data-label="Sel."><input type="checkbox" data-codigo="${p.AFA_PRODUT}" ${pen <= 0 ? 'disabled' : ''} ${isInCart ? 'checked' : ''} onchange="toggleProduto(this, ${JSON.stringify(p).replace(/"/g, '&quot;')}, ${pen})"></td>
-                        <td data-label="Código"><strong>${p.AFA_PRODUT}</strong></td>
-                        <td data-label="Descrição">${p.AFA_XDESCR || ''}</td>
-                        <td data-label="Nec.">${nec}</td>
-                        <td data-label="Ent.">${ent}</td>
-                        <td data-label="Pen.">${pen}</td>
-                        <td data-label="Qtd.">
-                            <div class="qty-container">
-                                <button class="qty-btn" onclick="changeQty('${p.AFA_PRODUT}', -1, ${pen})">-</button>
-                                <input type="number" id="qty_${p.AFA_PRODUT}" class="qty-input" value="${valInput}" onchange="updateManualQty('${p.AFA_PRODUT}', this.value, ${pen})">
-                                <button class="qty-btn" onclick="changeQty('${p.AFA_PRODUT}', 1, ${pen})">+</button>
-                            </div>
-                        </td>
-                        <td data-label="Status"><span class="status-badge status-${statusClass}">${statusText}</span></td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // --- LOGICA CARRINHO E QUANTIDADES ---
-        function changeQty(codigo, delta, max) {
-            const input = document.getElementById(`qty_${codigo}`);
-            let v = parseInt(input.value) + delta;
-            if (v < 0) v = 0; if (v > max) v = max;
-            input.value = v;
-            const item = carrinho.find(c => c.codigo === codigo);
-            if (item) { item.quantidade = v; updateCartBadge(); }
-        }
-
-        function updateManualQty(codigo, valor, max) {
-            let v = parseInt(valor) || 0;
-            if (v > max) v = max; if (v < 0) v = 0;
-            document.getElementById(`qty_${codigo}`).value = v;
-            const item = carrinho.find(c => c.codigo === codigo);
-            if (item) { item.quantidade = v; updateCartBadge(); }
-        }
-
-        function toggleProduto(cb, prod, max) {
-            if (cb.checked) {
-                const qtd = parseInt(document.getElementById(`qty_${prod.AFA_PRODUT}`).value);
-                if (qtd > 0) {
-                    carrinho.push({ codigo: prod.AFA_PRODUT, descricao: prod.AFA_XDESCR, quantidade: qtd });
-                } else { cb.checked = false; alert("Quantidade inválida"); }
-            } else {
-                carrinho = carrinho.filter(c => c.codigo !== prod.AFA_PRODUT);
-            }
-            updateCartBadge();
-        }
-
-        function toggleCart() { document.getElementById('cartModal').classList.toggle('active'); renderCart(); }
-        function updateCartBadge() { document.getElementById('cartBadge').textContent = carrinho.length; }
-
-        function renderCart() {
-            const container = document.getElementById('cartItems');
-            if (carrinho.length === 0) { container.innerHTML = '<p style="text-align:center;color:#999">Vazio</p>'; return; }
-            container.innerHTML = carrinho.map(item => `
-                <div class="cart-item">
-                    <div class="cart-item-info"><strong>${item.codigo}</strong><br><small>${item.descricao}</small><br>Qtd: ${item.quantidade}</div>
-                    <button class="remove-item" onclick="removeFromCart('${item.codigo}')">×</button>
-                </div>
-            `).join('');
-        }
-
-        function removeFromCart(codigo) {
-            carrinho = carrinho.filter(c => c.codigo !== codigo);
-            updateCartBadge(); renderCart();
-            const cb = document.querySelector(`input[data-codigo="${codigo}"]`);
-            if (cb) cb.checked = false;
-        }
-
-        function clearCart() { carrinho = []; updateCartBadge(); toggleCart(); aplicarFiltros(); }
-        function sendRequest() { if (carrinho.length > 0) alert("Requisição enviada!"); }
-
-        window.onload = carregarProjetos;
-    </script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
