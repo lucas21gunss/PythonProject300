@@ -51,7 +51,7 @@ class Config:
 
     # ========== INTEGRAÇÃO COM PROTHEUS ==========
     # URL base do REST do Protheus (sem a barra final)
-    URL_REST_PROTHEUS = os.getenv('URL_REST_PROTHEUS', 'http://172.22.8.25:4003/rest')
+    URL_REST_PROTHEUS = os.getenv('URL_REST_PROTHEUS', 'http://172.22.8.25:4003/rest/')
 
     # Endpoint específico para ordem de separação
     ENDPOINT_ORDEM_SEPARACAO = '/mmacdw02/ordem_separacao_fabrica/'
