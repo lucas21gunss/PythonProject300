@@ -17,7 +17,7 @@ def testar_configuracao():
     print("=" * 80 + "\n")
 
     # 1. Verifica variável de ambiente
-    url_base = os.getenv('URL_REST_PROTHEUS')
+    url_base = os.getenv("URL_REST_PROTHEUS")
 
     print("📋 Variável de Ambiente:")
     print(f"   URL_REST_PROTHEUS = {url_base}")
@@ -29,7 +29,7 @@ def testar_configuracao():
     # 2. Monta URL final
     endpoint = "/mmacdw02/ordem_separacao_fabrica/"
 
-    if url_base.endswith('/'):
+    if url_base.endswith("/"):
         url_base = url_base[:-1]
 
     url_completa = f"{url_base}{endpoint}"
@@ -38,7 +38,7 @@ def testar_configuracao():
     print(f"   {url_completa}")
 
     # 3. Verifica duplicação
-    if url_completa.count('http://') > 1 or url_completa.count('https://') > 1:
+    if url_completa.count("http://") > 1 or url_completa.count("https://") > 1:
         print("\n❌ ERRO: URL está duplicada!")
         print("   Verifique o arquivo .env")
         return False
@@ -86,8 +86,8 @@ def testar_endpoint_completo():
     print("🧪 TESTE DO ENDPOINT COMPLETO")
     print("=" * 80 + "\n")
 
-    url_base = os.getenv('URL_REST_PROTHEUS')
-    if url_base.endswith('/'):
+    url_base = os.getenv("URL_REST_PROTHEUS")
+    if url_base.endswith("/"):
         url_base = url_base[:-1]
 
     endpoint = "/mmacdw02/ordem_separacao_fabrica/"
@@ -99,19 +99,18 @@ def testar_endpoint_completo():
 
     payload = {
         "projeto": "TESTE",
-        "celulas": [{
-            "celula": "TESTE",
-            "itens": [{"produto": "TESTE", "quantidade": 1}]
-        }]
+        "celulas": [
+            {"celula": "TESTE", "itens": [{"produto": "TESTE", "quantidade": 1}]}
+        ],
     }
 
     try:
         response = requests.post(
             url_completa,
             json=payload,
-            headers={'Content-Type': 'application/json'},
+            headers={"Content-Type": "application/json"},
             timeout=10,
-            verify=False
+            verify=False,
         )
 
         print(f"📊 Status: {response.status_code}")

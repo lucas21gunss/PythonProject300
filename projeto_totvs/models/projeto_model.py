@@ -42,7 +42,7 @@ class ProjetoModel:
                 """
         try:
             df = pd.read_sql(query, self.conn)
-            return df.to_dict('records')
+            return df.to_dict("records")
         except:
             return []
 
@@ -94,7 +94,7 @@ class ProjetoModel:
                 """
         try:
             df = pd.read_sql(query, self.conn, params=[projeto, revisao])
-            return df.to_dict('records')
+            return df.to_dict("records")
         except:
             return []
 
@@ -148,6 +148,6 @@ class ProjetoModel:
                 """
         try:
             df = pd.read_sql(query, self.conn, params=[projeto, revisao, celula])
-            return df.to_dict('records')
+            return df.to_dict("records")
         except:
             return []

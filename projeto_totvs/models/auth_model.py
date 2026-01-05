@@ -3,51 +3,106 @@ import requests
 import base64
 from config import Config
 
+
 class AuthModel:
     def __init__(self):
         self.base_url = Config.URL_REST_PROTHEUS
 
     def autenticar_protheus(self, username, password):
         """
-        Versão Estável: Valida no /portalauth e depois pega token no /api/oauth2
+        Autenticação usando endpoint customizado /auth
+        - Usa OAuth2PasswordRequestForm (application/x-www-form-urlencoded)
+        - Senha codificada em base64
+        - Header X-Cliente-Token obrigatório
         """
-        if not self.base_url:
-            return {'success': False, 'error': 'URL do Protheus não configurada'}
+        import logging
 
-        # ETAPA 1: Validação de Credenciais (Basic Auth)
+        logger = logging.getLogger("AuthModel")
+
+        # Valida configurações
+        auth_url = Config.get_auth_endpoint()
+        chave_coletor = Config.CHAVE_COLETOR
+
+        logger.info(f"🔐 Tentando autenticar usuário: {username}")
+        logger.info(f"📍 URL de autenticação: {auth_url}")
+        logger.info(
+            f"🔑 Chave coletor configurada: {'Sim' if chave_coletor else 'Não'}"
+        )
+
+        if not auth_url:
+            return {"success": False, "error": "URL de autenticação não configurada"}
+
+        if not chave_coletor:
+            logger.error("❌ CHAVE_COLETOR não configurada no .env")
+            return {
+                "success": False,
+                "error": "CHAVE_COLETOR não configurada no .env",
+            }
+
         try:
-            url_portal = f"{self.base_url}/portalauth"
-            creds = base64.b64encode(f"{username}:{password}".encode()).decode('utf-8')
+            # Codifica a senha em base64
+            senha_base64 = base64.b64encode(password.encode()).decode()
+
+            # Prepara headers - OAuth2 usa application/x-www-form-urlencoded
             headers = {
-                "Authorization": f"Basic {creds}",
-                "User-Agent": "PortalPy_Flask"
-            }
-            # Apenas testa conexão e senha
-            requests.get(url_portal, headers=headers, timeout=5)
-        except Exception:
-            pass # Continua mesmo se falhar (alguns ambientes não têm portalauth)
-
-        # ETAPA 2: Token OAuth2
-        try:
-            url_token = f"{self.base_url}/api/oauth2/v1/token"
-            params = {
-                "grant_type": "password",
-                "username": username,
-                "password": password
+                "X-Cliente-Token": chave_coletor,
+                "Content-Type": "application/x-www-form-urlencoded",
             }
 
-            response_token = requests.post(url_token, params=params, timeout=10, verify=False)
+            # OAuth2PasswordRequestForm espera 'username' e 'password' como form fields
+            data = {"username": username, "password": senha_base64}
 
-            if response_token.status_code in [200, 201]:
-                dados = response_token.json()
-                return {
-                    'success': True,
-                    'access_token': dados.get('access_token'),
-                    'refresh_token': dados.get('refresh_token'),
-                    'user_id': username
-                }
+            logger.info(f"📤 Enviando requisição OAuth2 para {auth_url}")
+            logger.debug(f"Headers: X-Cliente-Token presente")
+            logger.debug(f"Data: username={username}, password=[BASE64_REDACTED]")
+
+            # Faz a requisição
+            response = requests.post(
+                url=auth_url, headers=headers, data=data, timeout=10, verify=False
+            )
+
+            logger.info(f"📥 Status Code: {response.status_code}")
+            logger.info(f"📥 Response: {response.text[:500]}")  # Primeiros 500 chars
+
+            # Processa resposta
+            if response.status_code in [200, 201]:
+                dados = response.json()
+                logger.info(f"✅ Autenticação bem-sucedida para {username}")
+
+                # O endpoint retorna 'dados_autenticacao' com 'token'
+                if "dados_autenticacao" in dados:
+                    return {
+                        "success": True,
+                        "access_token": dados["dados_autenticacao"].get("token", ""),
+                        "refresh_token": dados["dados_autenticacao"].get(
+                            "refresh_token", ""
+                        ),
+                        "user_id": username,
+                    }
+                else:
+                    # Fallback para estrutura antiga
+                    return {
+                        "success": True,
+                        "access_token": dados.get("access_token", ""),
+                        "refresh_token": dados.get("refresh_token", ""),
+                        "user_id": username,
+                    }
             else:
-                return {'success': False, 'error': f'Protheus recusou login: {response_token.text}'}
+                logger.error(
+                    f"❌ Autenticação falhou - Status: {response.status_code}"
+                )
+                logger.error(f"❌ Resposta: {response.text}")
+                return {
+                    "success": False,
+                    "error": f"Autenticação falhou (Status {response.status_code}): {response.text}",
+                }
 
+        except requests.exceptions.Timeout:
+            logger.error("❌ Timeout na autenticação")
+            return {"success": False, "error": "Timeout na autenticação"}
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"❌ Erro de conexão: {str(e)}")
+            return {"success": False, "error": "Erro de conexão com servidor de auth"}
         except Exception as e:
-            return {'success': False, 'error': f'Erro de conexão: {str(e)}'}
+            logger.exception("❌ Erro inesperado na autenticação")
+            return {"success": False, "error": f"Erro inesperado: {str(e)}"}

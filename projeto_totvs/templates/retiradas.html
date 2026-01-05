@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Retiradas</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; }
+
+        /* HEADER IGUAL AO INDEX */
+        header {
+            background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+        }
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        .logo { width: 50px; height: 50px; background: white; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0066cc; font-size: 24px; }
+        .header-title { font-size: 24px; font-weight: bold; }
+        .header-right { display: flex; gap: 20px; align-items: center; font-size: 14px; }
+
+        .btn-logout {
+            color: white; text-decoration: none; font-weight: bold; border: 1px solid rgba(255,255,255,0.4);
+            padding: 8px 15px; border-radius: 4px; transition: all 0.3s;
+        }
+        .btn-logout:hover { background-color: rgba(255,255,255,0.15); border-color: #fff; }
+
+        /* LAYOUT PRINCIPAL */
+        .container { display: flex; height: calc(100vh - 70px); margin-top: 70px; }
+
+        /* MENU LATERAL */
+        aside { width: 200px; background-color: #f9f9f9; border-right: 1px solid #ddd; padding: 20px 0; }
+        .menu-title { padding: 10px 20px; font-weight: bold; color: #333; font-size: 12px; text-transform: uppercase; }
+        .menu-item { padding: 10px 20px; color: #0066cc; cursor: pointer; text-decoration: none; display: block; font-size: 13px; }
+        .menu-item:hover { background-color: #e8f0ff; }
+
+        /* Classe para destacar o item atual */
+        .menu-item.active { background-color: #e8f0ff; border-left: 4px solid #0066cc; padding-left: 16px; }
+
+        /* ÁREA DE CONTEÚDO (Onde vai o sistema novo) */
+        main { flex: 1; padding: 30px; overflow-y: auto; }
+        .content-box {
+            background-color: white; border: 1px solid #ddd; border-radius: 4px; padding: 40px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); text-align: center;
+        }
+        h2 { color: #333; margin-bottom: 10px; }
+        p { color: #666; }
+
+        .placeholder-icon { font-size: 60px; color: #ccc; margin-bottom: 20px; display: block; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <div class="logo">M</div>
+            <div class="header-title">Manufatura</div>
+        </div>
+        <div class="header-right">
+            <span>Olá, Usuário</span>
+            <a href="/logout" class="btn-logout">🚪 Sair</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside>
+            <div class="menu-title">Menu</div>
+            <a href="/" class="menu-item">Projetos</a>
+            <a href="/retiradas" class="menu-item active">Retiradas</a>
+        </aside>
+
+        main>
+            <div class="content-box">
+                <span class="placeholder-icon">🚧</span>
+                <h2>Módulo de Retiradas</h2>
+                <p>Este sistema está em desenvolvimento.</p>
+                <p style="margin-top: 20px;">
+                    <button style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        + Nova Retirada (Exemplo)
+                    </button>
+                </p>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
